@@ -58,18 +58,18 @@ export default function OptimizationPanel({
   };
 
   return (
-    <div className="glass-panel p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4">
+    <div className="glass-panel p-4 sm:p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4 min-w-0">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 shadow-xs">
+      <div className="flex items-center justify-between min-w-0 gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 shadow-xs shrink-0">
             <Sparkles className="w-4 h-4" />
           </div>
-          <div>
-            <h2 className="text-sm font-black text-slate-900 font-heading flex items-center gap-2">
+          <div className="min-w-0">
+            <h2 className="text-sm font-black text-slate-900 font-heading flex items-center gap-2 truncate">
               Google OR-Tools Optimization Engine
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 truncate">
               Cross-domain resource balancing & dynamic route gating
             </p>
           </div>
@@ -78,7 +78,7 @@ export default function OptimizationPanel({
         <button
           disabled={isRunningSolver}
           onClick={handleRunSolver}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold shadow-md shadow-cyan-600/20 border border-cyan-500/30 transition-all hover:shadow-lg active:scale-95 disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold shadow-md shadow-cyan-600/20 border border-cyan-500/30 transition-all hover:shadow-lg active:scale-95 disabled:opacity-50 shrink-0 whitespace-nowrap"
         >
           {isRunningSolver ? (
             <>

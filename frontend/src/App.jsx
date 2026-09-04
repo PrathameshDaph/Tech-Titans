@@ -192,7 +192,7 @@ export default function App() {
   const isOptimized = (telemetry?.applied_optimizations?.length || 0) > 0;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col font-sans selection:bg-cyan-500 selection:text-white">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col font-sans selection:bg-cyan-500 selection:text-white w-full overflow-x-hidden">
       {/* Topbar Navigation Header */}
       <Topbar
         telemetry={telemetry}
@@ -206,12 +206,12 @@ export default function App() {
       />
 
       {/* Main Container */}
-      <main className="flex-1 p-3 sm:p-4 md:p-5 lg:p-6 space-y-4 max-w-[1920px] mx-auto w-full">
+      <main className="flex-1 p-2.5 sm:p-4 md:p-5 lg:p-6 space-y-4 max-w-[1920px] mx-auto w-full min-w-0 box-border">
         {/* KPI Cards Row */}
         <KpiCards kpis={telemetry?.kpis} activeRole={activeRole} />
 
         {/* Responsive Demo Walkthrough Flow Bar (100% visible at 100% zoom across 1366x768, 1440x900, 1920x1080) */}
-        <div className="glass-panel p-2.5 sm:p-3 rounded-2xl border border-slate-200 shadow-sm bg-gradient-to-r from-sky-50 via-white to-purple-50 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 text-xs">
+        <div className="glass-panel p-2.5 sm:p-3 rounded-2xl border border-slate-200 shadow-sm bg-gradient-to-r from-sky-50 via-white to-purple-50 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 text-xs min-w-0">
           <div className="flex items-center gap-2 shrink-0 px-1">
             <span className="px-2 py-0.5 rounded-md bg-cyan-600 text-white font-extrabold text-[10px] tracking-wider uppercase shadow-xs">
               DEMO FLOW
@@ -220,11 +220,11 @@ export default function App() {
           </div>
 
           {/* 4 Interactive Responsive Step Buttons */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 flex-1">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 flex-1 min-w-0">
             {/* Step 1 */}
             <button
               onClick={() => handleDemoStepClick(1)}
-              className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center justify-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all min-w-0 ${
                 demoStep === 1 
                   ? 'bg-cyan-100 text-cyan-900 border border-cyan-300 shadow-xs scale-[1.01]' 
                   : 'bg-white/80 hover:bg-white text-slate-600 border border-slate-200 hover:text-slate-900'
@@ -237,7 +237,7 @@ export default function App() {
             {/* Step 2 */}
             <button
               onClick={() => handleDemoStepClick(2)}
-              className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center justify-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all min-w-0 ${
                 demoStep === 2 
                   ? 'bg-rose-100 text-rose-900 border border-rose-300 shadow-xs scale-[1.01]' 
                   : 'bg-white/80 hover:bg-white text-slate-600 border border-slate-200 hover:text-slate-900'
@@ -250,7 +250,7 @@ export default function App() {
             {/* Step 3 */}
             <button
               onClick={() => handleDemoStepClick(3)}
-              className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center justify-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all min-w-0 ${
                 demoStep === 3 
                   ? 'bg-amber-100 text-amber-900 border border-amber-300 shadow-xs scale-[1.01]' 
                   : 'bg-white/80 hover:bg-white text-slate-600 border border-slate-200 hover:text-slate-900'
@@ -263,7 +263,7 @@ export default function App() {
             {/* Step 4: Prominently Visible & Clickable */}
             <button
               onClick={() => handleDemoStepClick(4)}
-              className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-black transition-all ${
+              className={`flex items-center justify-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-black transition-all min-w-0 ${
                 demoStep === 4 
                   ? 'bg-emerald-100 text-emerald-900 border border-emerald-400 shadow-xs scale-[1.01]' 
                   : 'bg-gradient-to-r from-emerald-50 to-teal-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs'
@@ -284,11 +284,11 @@ export default function App() {
         />
 
         {/* 2-Column Master Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 min-w-0">
           {/* Left / Center Column (7 Cols): Digital Twin Map + Sandbox + Optimization */}
-          <div className="lg:col-span-7 flex flex-col gap-4">
+          <div className="lg:col-span-7 flex flex-col gap-4 min-w-0">
             {/* Main Interactive Map (Google Maps 2D) */}
-            <div className="h-[520px] w-full">
+            <div className="h-[520px] w-full min-w-0">
               <DigitalTwinMap
                 telemetry={telemetry}
                 activeRole={activeRole}
@@ -312,7 +312,7 @@ export default function App() {
           </div>
 
           {/* Right Column (5 Cols): AI Prediction Horizon + Copilot Chat + Live Alert Feed */}
-          <div className="lg:col-span-5 flex flex-col gap-4">
+          <div className="lg:col-span-5 flex flex-col gap-4 min-w-0">
             {/* AI Predictive Horizon */}
             <PredictionPanel
               predictions={predictions}

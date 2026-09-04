@@ -94,18 +94,18 @@ export default function PredictionPanel({ predictions, onRefreshPredictions, isO
   };
 
   return (
-    <div className="glass-panel p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4">
+    <div className="glass-panel p-4 sm:p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4 min-w-0">
       {/* Panel Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-cyan-50 text-cyan-600 border border-cyan-200 shadow-xs">
+      <div className="flex items-center justify-between min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="p-2 rounded-xl bg-cyan-50 text-cyan-600 border border-cyan-200 shadow-xs shrink-0">
             <Cpu className="w-4 h-4" />
           </div>
-          <div>
-            <h2 className="text-sm font-black text-slate-900 font-heading flex items-center gap-2">
+          <div className="min-w-0">
+            <h2 className="text-sm font-black text-slate-900 font-heading flex items-center gap-2 truncate">
               AI Predictive Bottleneck Horizon (30–120m)
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 truncate">
               {predictions?.algorithm || "XGBoost & Temporal Graph Neural Predictor"}
             </p>
           </div>
@@ -113,7 +113,7 @@ export default function PredictionPanel({ predictions, onRefreshPredictions, isO
 
         <button
           onClick={onRefreshPredictions}
-          className="p-1.5 text-slate-500 hover:text-cyan-600 hover:bg-slate-100 rounded-lg transition-colors"
+          className="p-1.5 text-slate-500 hover:text-cyan-600 hover:bg-slate-100 rounded-lg transition-colors shrink-0 ml-1"
           title="Recalculate AI Prediction"
         >
           <RefreshCw className="w-4 h-4" />
@@ -121,7 +121,7 @@ export default function PredictionPanel({ predictions, onRefreshPredictions, isO
       </div>
 
       {/* Horizon Tabs */}
-      <div className="flex items-center gap-1.5 bg-slate-100/90 p-1.5 rounded-xl border border-slate-200 shadow-inner">
+      <div className="flex items-center gap-1 sm:gap-1.5 bg-slate-100/90 p-1 sm:p-1.5 rounded-xl border border-slate-200 shadow-inner min-w-0 overflow-x-auto no-scrollbar">
         {[30, 60, 90, 120].map((mins) => {
           const hData = horizons.find(h => h.horizon_minutes === mins);
           const isCrit = hData?.risk_level === 'CRITICAL';
@@ -130,7 +130,7 @@ export default function PredictionPanel({ predictions, onRefreshPredictions, isO
             <button
               key={mins}
               onClick={() => setActiveHorizon(mins)}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 min-w-[70px] py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
                 activeHorizon === mins
                   ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-sm scale-[1.02]'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
@@ -138,7 +138,7 @@ export default function PredictionPanel({ predictions, onRefreshPredictions, isO
             >
               <span>T+{mins}m</span>
               {(isCrit || isHigh) && (
-                <span className={`w-2 h-2 rounded-full ${isCrit ? 'bg-rose-400 animate-ping' : 'bg-amber-400'}`} />
+                <span className={`w-2 h-2 rounded-full shrink-0 ${isCrit ? 'bg-rose-400 animate-ping' : 'bg-amber-400'}`} />
               )}
             </button>
           );

@@ -102,35 +102,35 @@ export default function KpiCards({ kpis, activeRole }) {
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2.5 sm:gap-3 min-w-0">
       {cards.map((card, idx) => {
         const Icon = card.icon;
         const roleBadge = getRoleBadge(card.key);
         return (
           <div
             key={idx}
-            className={`p-3.5 sm:p-4 rounded-2xl border ${card.borderColor} ${card.bgColor} relative overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md shadow-2xs space-y-2 ${
+            className={`p-3 sm:p-4 rounded-2xl border ${card.borderColor} ${card.bgColor} relative overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md shadow-2xs space-y-2 min-w-0 ${
               roleBadge ? 'ring-2 ring-cyan-500/30' : ''
             }`}
           >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-600 tracking-wide truncate">
+            <div className="flex items-center justify-between min-w-0">
+              <span className="text-xs font-bold text-slate-600 tracking-wide truncate min-w-0">
                 {card.label}
               </span>
-              <div className={`p-1.5 rounded-lg ${card.iconBg} shadow-2xs`}>
+              <div className={`p-1.5 rounded-lg ${card.iconBg} shadow-2xs shrink-0 ml-1`}>
                 <Icon className="w-3.5 h-3.5" />
               </div>
             </div>
 
-            <div className="flex items-baseline gap-2">
-              <span className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900 font-heading">
+            <div className="flex items-baseline gap-2 min-w-0">
+              <span className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-black tracking-tight text-slate-900 font-heading truncate">
                 {card.value}
               </span>
             </div>
 
-            <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
-              <span className="text-slate-500 font-medium truncate">{card.subtext}</span>
-              <span className={`px-2 py-0.5 rounded-md text-[9px] font-extrabold border ${roleBadge ? roleBadge.color : card.badgeColor}`}>
+            <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100 min-w-0">
+              <span className="text-slate-500 font-medium truncate min-w-0 mr-1">{card.subtext}</span>
+              <span className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] font-extrabold border shrink-0 ${roleBadge ? roleBadge.color : card.badgeColor}`}>
                 {roleBadge ? roleBadge.text : card.badge}
               </span>
             </div>

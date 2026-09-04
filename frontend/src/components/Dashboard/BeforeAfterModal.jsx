@@ -86,23 +86,23 @@ export default function BeforeAfterModal({ isOpen, onClose, comparisonData, isOp
   };
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 md:p-8 border border-slate-200 shadow-2xl relative">
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-900/50 backdrop-blur-sm animate-fade-in overflow-y-auto">
+      <div className="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-4 sm:p-6 md:p-8 border border-slate-200 shadow-2xl relative min-w-0">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-6 right-6 p-2 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 border border-slate-200 transition-colors shadow-2xs"
+          className="absolute top-4 sm:top-6 right-4 sm:right-6 p-2 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 border border-slate-200 transition-colors shadow-2xs z-10"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Modal Header */}
-        <div className="flex items-center gap-3.5 mb-6">
-          <div className="p-3.5 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/20">
-            <GitCompare className="w-6 h-6" />
+        <div className="flex items-center gap-3 sm:gap-3.5 mb-6 pr-10 min-w-0">
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/20 shrink-0">
+            <GitCompare className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <h2 className="text-xl font-black text-slate-900 font-heading tracking-tight">
+          <div className="min-w-0">
+            <h2 className="text-lg sm:text-xl font-black text-slate-900 font-heading tracking-tight">
               Before vs After AI Optimization Impact Analysis
             </h2>
             <p className="text-xs text-slate-500">
@@ -112,7 +112,7 @@ export default function BeforeAfterModal({ isOpen, onClose, comparisonData, isOp
         </div>
 
         {/* Comparative KPI Metrics Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3.5 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-3.5 mb-6 min-w-0">
           {metrics.map((m, idx) => (
             <div
               key={idx}

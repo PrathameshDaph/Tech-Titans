@@ -71,29 +71,29 @@ export default function ScenarioSandbox({ activeScenario, onTriggerScenario, onR
   ];
 
   return (
-    <div className="glass-panel p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4">
+    <div className="glass-panel p-4 sm:p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4 min-w-0">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 shadow-xs">
+      <div className="flex items-center justify-between min-w-0 gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="p-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 shadow-xs shrink-0">
             <Flame className="w-4 h-4" />
           </div>
-          <div>
-            <h2 className="text-sm font-black text-slate-900 font-heading flex items-center gap-2">
+          <div className="min-w-0">
+            <h2 className="text-sm font-black text-slate-900 font-heading flex items-center gap-2 truncate">
               What-If Scenario Sandbox
             </h2>
-            <p className="text-xs text-slate-500">Stress-test district resiliency under high-contingency events</p>
+            <p className="text-xs text-slate-500 truncate">Stress-test district resiliency under high-contingency events</p>
           </div>
         </div>
 
         {activeScenario && (
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-rose-50 text-rose-800 border border-rose-300 animate-pulse shadow-xs">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <span className="px-2 sm:px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-rose-50 text-rose-800 border border-rose-300 animate-pulse shadow-xs">
               Active: {activeScenario.replace('_', ' ')}
             </span>
             <button
               onClick={onResetSim}
-              className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+              className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
               title="Clear Scenario"
             >
               <RotateCcw className="w-4 h-4" />

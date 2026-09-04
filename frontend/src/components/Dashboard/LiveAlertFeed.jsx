@@ -40,22 +40,22 @@ export default function LiveAlertFeed({ alerts, onAcknowledgeAlert }) {
   };
 
   return (
-    <div className="glass-panel p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4">
+    <div className="glass-panel p-4 sm:p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4 min-w-0">
       {/* Header */}
-      <div className="flex items-center justify-between pb-3.5 border-b border-slate-200">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 shadow-xs">
+      <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 min-w-0 gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="p-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 shadow-xs shrink-0">
             <Bell className="w-4 h-4" />
           </div>
-          <div>
-            <h2 className="text-sm font-black text-slate-900 font-heading">
+          <div className="min-w-0">
+            <h2 className="text-sm font-black text-slate-900 font-heading truncate">
               Live Alert & Incident Telemetry
             </h2>
-            <p className="text-xs text-slate-500">Automated sensor & vision stream</p>
+            <p className="text-xs text-slate-500 truncate">Automated sensor & vision stream</p>
           </div>
         </div>
 
-        <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 shadow-xs">
+        <span className="text-xs font-mono font-bold px-2.5 sm:px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 shadow-xs shrink-0 whitespace-nowrap">
           {alerts?.length || 0} Events
         </span>
       </div>

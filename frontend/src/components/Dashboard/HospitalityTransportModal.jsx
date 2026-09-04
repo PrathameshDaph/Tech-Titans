@@ -12,21 +12,21 @@ export default function HospitalityTransportModal({ isOpen, onClose, telemetry }
   const parkingHubs = telemetry?.parking_hubs || [];
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white w-full max-w-4xl max-h-[85vh] overflow-y-auto rounded-3xl p-6 md:p-8 border border-slate-200 shadow-2xl relative">
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-900/50 backdrop-blur-sm animate-fade-in overflow-y-auto">
+      <div className="bg-white w-full max-w-4xl max-h-[85vh] overflow-y-auto rounded-3xl p-4 sm:p-6 md:p-8 border border-slate-200 shadow-2xl relative min-w-0">
         <button
           onClick={onClose}
-          className="absolute top-6 right-6 p-2 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 border border-slate-200 transition-colors shadow-2xs"
+          className="absolute top-4 sm:top-6 right-4 sm:right-6 p-2 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 border border-slate-200 transition-colors shadow-2xs z-10"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-3.5 mb-6">
-          <div className="p-3.5 rounded-2xl bg-cyan-50 text-cyan-700 border border-cyan-200 shadow-xs">
-            <Layers className="w-6 h-6" />
+        <div className="flex items-center gap-3 sm:gap-3.5 mb-6 pr-10 min-w-0">
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-cyan-50 text-cyan-700 border border-cyan-200 shadow-xs shrink-0">
+            <Layers className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <h2 className="text-xl font-black text-slate-900 font-heading">
+          <div className="min-w-0">
+            <h2 className="text-lg sm:text-xl font-black text-slate-900 font-heading">
               District Infrastructure Matrix
             </h2>
             <p className="text-xs text-slate-500">
@@ -36,7 +36,7 @@ export default function HospitalityTransportModal({ isOpen, onClose, telemetry }
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-2 mb-6 border-b border-slate-200 pb-3">
+        <div className="flex items-center gap-1.5 sm:gap-2 mb-6 border-b border-slate-200 pb-3 overflow-x-auto no-scrollbar min-w-0">
           {[
             { id: 'VENUES', label: `Venues (${venues.length})`, icon: Building },
             { id: 'TRANSIT', label: `Transit Hubs (${transitNodes.length})`, icon: Bus },

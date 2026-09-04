@@ -208,14 +208,14 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
   const isKeyActive = Boolean(apiKey && !loadError);
 
   return (
-    <div className="relative w-full h-full min-h-[520px] rounded-2xl overflow-hidden glass-panel border border-slate-200 shadow-md flex flex-col">
+    <div className="relative w-full h-full min-h-[520px] rounded-2xl overflow-hidden glass-panel border border-slate-200 shadow-md flex flex-col min-w-0">
       {/* Top Floating Control Bar */}
-      <div className="absolute top-3.5 left-3.5 z-20 flex flex-wrap items-center gap-2 bg-white/95 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/90 shadow-lg">
+      <div className="absolute top-2.5 sm:top-3.5 left-2.5 sm:left-3.5 z-20 flex flex-wrap items-center gap-1.5 sm:gap-2 bg-white/95 backdrop-blur-md p-1 sm:p-1.5 rounded-2xl border border-slate-200/90 shadow-lg max-w-[calc(100%-20px)]">
         {/* Mode Switcher */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+        <div className="flex items-center bg-slate-100 p-0.5 sm:p-1 rounded-xl border border-slate-200">
           <button
             onClick={() => setMapMode('ROADMAP')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+            className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all ${
               mapMode === 'ROADMAP' 
                 ? 'bg-cyan-600 text-white shadow-sm' 
                 : 'text-slate-600 hover:text-slate-900'
@@ -225,7 +225,7 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
           </button>
           <button
             onClick={() => setMapMode('SATELLITE')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+            className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all ${
               mapMode === 'SATELLITE' 
                 ? 'bg-cyan-600 text-white shadow-sm' 
                 : 'text-slate-600 hover:text-slate-900'
@@ -235,7 +235,7 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
           </button>
           <button
             onClick={() => setMapMode('HYBRID')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+            className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all ${
               mapMode === 'HYBRID' 
                 ? 'bg-cyan-600 text-white shadow-sm' 
                 : 'text-slate-600 hover:text-slate-900'
@@ -248,7 +248,7 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
         {/* Layer Toggles */}
         <button
           onClick={() => setShowHeatmap(!showHeatmap)}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+          className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold border transition-all ${
             showHeatmap 
               ? 'bg-rose-50 text-rose-700 border-rose-200 shadow-xs' 
               : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -260,7 +260,7 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
 
         <button
           onClick={() => setShowVehicles(!showVehicles)}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+          className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold border transition-all ${
             showVehicles 
               ? 'bg-amber-50 text-amber-800 border-amber-200 shadow-xs' 
               : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -272,7 +272,7 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
 
         <button
           onClick={() => setShowRoadFlows(!showRoadFlows)}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+          className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold border transition-all ${
             showRoadFlows 
               ? 'bg-sky-50 text-sky-800 border-sky-200 shadow-xs' 
               : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -284,7 +284,7 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
       </div>
 
       {/* Camera Presets & Key Config Badge */}
-      <div className="absolute top-3.5 right-3.5 z-20 hidden sm:flex items-center gap-1.5 bg-white/95 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/90 shadow-lg">
+      <div className="absolute top-2.5 sm:top-3.5 right-2.5 sm:right-3.5 z-20 hidden md:flex items-center gap-1 sm:gap-1.5 bg-white/95 backdrop-blur-md p-1 sm:p-1.5 rounded-2xl border border-slate-200/90 shadow-lg">
         <button
           onClick={() => handlePanTo(51.5387, -0.0165, 14)}
           className="px-2.5 py-1 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"

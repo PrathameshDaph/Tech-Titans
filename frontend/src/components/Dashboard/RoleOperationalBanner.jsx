@@ -82,18 +82,18 @@ export default function RoleOperationalBanner({ activeRole, telemetry, onOpenInf
   const Icon = role.icon;
 
   return (
-    <div className="glass-panel p-3.5 md:p-4 rounded-2xl border border-slate-200 shadow-sm bg-gradient-to-r from-white via-slate-50/70 to-white flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs transition-all animate-fade-in">
+    <div className="glass-panel p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-sm bg-gradient-to-r from-white via-slate-50/70 to-white flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs transition-all animate-fade-in min-w-0">
       {/* Left: Role identity and mandate */}
-      <div className="flex items-start sm:items-center gap-3">
+      <div className="flex items-start sm:items-center gap-3 min-w-0">
         <div className={`p-2.5 rounded-xl bg-gradient-to-tr ${role.color} text-white shadow-md shadow-slate-300 shrink-0`}>
           <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
         </div>
-        <div>
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="font-extrabold text-slate-900 text-sm tracking-tight font-heading">
               {role.title}
             </h3>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${role.badgeBg}`}>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border shrink-0 ${role.badgeBg}`}>
               OPERATIONAL VIEW
             </span>
           </div>
@@ -104,9 +104,9 @@ export default function RoleOperationalBanner({ activeRole, telemetry, onOpenInf
       </div>
 
       {/* Center: Live Role Focus Highlights */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:w-auto">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:w-auto min-w-0">
         {role.highlights.map((h, i) => (
-          <div key={i} className="bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
+          <div key={i} className="bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs min-w-0">
             <span className="text-[10px] font-semibold text-slate-400 block truncate">{h.label}</span>
             <span className="text-xs font-bold text-slate-800 font-mono block truncate">{h.value}</span>
           </div>
@@ -116,7 +116,7 @@ export default function RoleOperationalBanner({ activeRole, telemetry, onOpenInf
       {/* Right: Quick Action Button */}
       <button
         onClick={onOpenInfraModal}
-        className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-300 shadow-2xs text-xs font-bold transition-all shrink-0 hover:shadow-xs"
+        className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-300 shadow-2xs text-xs font-bold transition-all shrink-0 hover:shadow-xs whitespace-nowrap"
       >
         <span>Deep Dive Matrix</span>
         <ArrowRight className="w-3.5 h-3.5 text-cyan-600" />

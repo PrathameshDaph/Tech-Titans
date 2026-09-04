@@ -74,22 +74,22 @@ export default function AICopilotChat({
   ];
 
   return (
-    <div className="glass-panel p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-[500px]">
+    <div className="glass-panel p-4 sm:p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-[500px] min-w-0">
       {/* Header */}
-      <div className="flex items-center justify-between pb-3.5 border-b border-slate-200">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-purple-50 text-purple-600 border border-purple-200 shadow-xs">
+      <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 min-w-0 gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="p-2 rounded-xl bg-purple-50 text-purple-600 border border-purple-200 shadow-xs shrink-0">
             <Bot className="w-4 h-4" />
           </div>
-          <div>
-            <h2 className="text-sm font-black text-slate-900 font-heading flex items-center gap-2">
+          <div className="min-w-0">
+            <h2 className="text-sm font-black text-slate-900 font-heading flex items-center gap-2 truncate">
               AI Event Copilot
             </h2>
-            <p className="text-xs text-slate-500">Natural-Language Event Intelligence & Root Cause Engine</p>
+            <p className="text-xs text-slate-500 truncate">Natural-Language Event Intelligence & Root Cause Engine</p>
           </div>
         </div>
 
-        <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1 shadow-2xs">
+        <span className="text-[10px] font-extrabold px-2 sm:px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1 shadow-2xs shrink-0 whitespace-nowrap">
           <Sparkles className="w-3.5 h-3.5 text-purple-600" /> GenAI Active
         </span>
       </div>
