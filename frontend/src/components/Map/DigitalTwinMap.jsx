@@ -281,10 +281,18 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
           <Navigation className="w-3.5 h-3.5 text-sky-600" />
           <span>Road Flow</span>
         </button>
+
+        <button
+          onClick={() => setShowKeyPrompt(!showKeyPrompt)}
+          className="p-1 sm:p-1.5 text-slate-500 hover:text-cyan-700 hover:bg-slate-100 rounded-lg transition-colors ml-auto"
+          title="Google Maps API Key Setup"
+        >
+          <Key className="w-3.5 h-3.5" />
+        </button>
       </div>
 
-      {/* Camera Presets & Key Config Badge */}
-      <div className="absolute top-2.5 sm:top-3.5 right-2.5 sm:right-3.5 z-20 hidden md:flex items-center gap-1 sm:gap-1.5 bg-white/95 backdrop-blur-md p-1 sm:p-1.5 rounded-2xl border border-slate-200/90 shadow-lg">
+      {/* Camera Presets (Only visible on wide 2xl screens to prevent collision) */}
+      <div className="absolute top-2.5 sm:top-3.5 right-2.5 sm:right-3.5 z-20 hidden 2xl:flex items-center gap-1 sm:gap-1.5 bg-white/95 backdrop-blur-md p-1 sm:p-1.5 rounded-2xl border border-slate-200/90 shadow-lg">
         <button
           onClick={() => handlePanTo(51.5387, -0.0165, 14)}
           className="px-2.5 py-1 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
@@ -302,13 +310,6 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
           className="px-2.5 py-1 text-xs font-bold text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
         >
           Metro Hub
-        </button>
-        <button
-          onClick={() => setShowKeyPrompt(!showKeyPrompt)}
-          className="p-1.5 text-slate-500 hover:text-cyan-700 hover:bg-slate-100 rounded-lg transition-colors"
-          title="Google Maps API Key Setup"
-        >
-          <Key className="w-3.5 h-3.5" />
         </button>
       </div>
 
