@@ -12,7 +12,7 @@ import BeforeAfterModal from './components/Dashboard/BeforeAfterModal';
 import HospitalityTransportModal from './components/Dashboard/HospitalityTransportModal';
 import { Sparkles, HelpCircle, ChevronRight, CheckCircle, ArrowRight, Play, Zap, GitCompare } from 'lucide-react';
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8000';
 
 export default function App() {
   const [telemetry, setTelemetry] = useState(null);
@@ -59,7 +59,17 @@ export default function App() {
     // Setup WebSocket
     let ws;
     try {
-      ws = new WebSocket('ws://127.0.0.1:8000/ws/telemetry');
+      let wsUrl = import.meta.env.VITE_WS_URL;
+      if (!wsUrl) {
+        if (API_BASE.startsWith('https://')) {
+          wsUrl = API_BASE.replace('https://', 'wss://') + '/ws/telemetry';
+        } else if (API_BASE.startsWith('http://')) {
+          wsUrl = API_BASE.replace('http://', 'ws://') + '/ws/telemetry';
+        } else {
+          wsUrl = 'ws://127.0.0.1:8000/ws/telemetry';
+        }
+      }
+      ws = new WebSocket(wsUrl);
       ws.onmessage = (evt) => {
         try {
           const data = JSON.parse(evt.data);
