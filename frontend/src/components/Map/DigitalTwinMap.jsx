@@ -150,7 +150,7 @@ class GoogleMapErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="w-full h-full min-h-[520px] flex flex-col items-center justify-center p-6 bg-slate-900 text-white text-center rounded-2xl space-y-3">
+        <div className="w-full h-full min-h-[540px] flex flex-col items-center justify-center p-6 bg-slate-900 text-white text-center rounded-2xl space-y-3">
           <div className="p-3 bg-amber-500/20 text-amber-400 rounded-2xl border border-amber-500/30">
             <AlertTriangle className="w-8 h-8" />
           </div>
@@ -202,9 +202,16 @@ function GoogleMapsRenderer({
     libraries: MAP_LIBRARIES
   });
 
+  const onMapLoad = useCallback((map) => {
+    setGoogleMapInstance(map);
+    if (window.google?.maps?.event) {
+      window.google.maps.event.trigger(map, 'resize');
+    }
+  }, [setGoogleMapInstance]);
+
   if (loadError) {
     return (
-      <div className="w-full h-full min-h-[520px] flex flex-col items-center justify-center p-6 bg-slate-900 text-white text-center rounded-2xl space-y-3">
+      <div className="w-full h-full min-h-[540px] flex flex-col items-center justify-center p-6 bg-slate-900 text-white text-center rounded-2xl space-y-3">
         <div className="p-3 bg-rose-500/20 text-rose-400 rounded-2xl border border-rose-500/30">
           <AlertTriangle className="w-8 h-8" />
         </div>
@@ -232,7 +239,7 @@ function GoogleMapsRenderer({
 
   if (!isLoaded) {
     return (
-      <div className="w-full h-full min-h-[520px] flex flex-col items-center justify-center bg-slate-900 text-white rounded-2xl space-y-2">
+      <div className="w-full h-full min-h-[540px] flex flex-col items-center justify-center bg-slate-900 text-white rounded-2xl space-y-2">
         <div className="flex items-center gap-2.5 text-cyan-400 text-sm font-semibold">
           <RefreshCw className="w-5 h-5 animate-spin" />
           <span>Connecting to Google Maps Platform...</span>
@@ -243,16 +250,19 @@ function GoogleMapsRenderer({
   }
 
   return (
-    <div className="w-full h-full flex-1 relative bg-slate-100" style={{ minHeight: '520px' }}>
+    <div className="w-full h-[540px] sm:h-[580px] min-h-[540px] relative bg-slate-100 flex-1">
       <GoogleMap
-        mapContainerStyle={{ width: '100%', height: '100%' }}
+        mapContainerStyle={{ width: '100%', height: '100%', minHeight: '540px' }}
         center={DEFAULT_CENTER}
         zoom={DEFAULT_ZOOM}
-        onLoad={setGoogleMapInstance}
+        onLoad={onMapLoad}
         options={{
           disableDefaultUI: false,
           zoomControl: true,
-          mapTypeId: googleMapMode.toLowerCase()
+          mapTypeId: googleMapMode.toLowerCase(),
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false
         }}
       >
         {/* Heatmap Circles */}
@@ -344,7 +354,7 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
     return localStorage.getItem('EVENTFLOW_GMAPS_KEY') || envKey || '';
   });
   const [engine, setEngine] = useState(() => {
-    return localStorage.getItem('EVENTFLOW_MAP_ENGINE') || (apiKey ? 'GOOGLE_MAPS' : 'LEAFLET');
+    return localStorage.getItem('EVENTFLOW_MAP_ENGINE') || 'LEAFLET';
   });
   const [inputKey, setInputKey] = useState(apiKey);
   const [showKeyModal, setShowKeyModal] = useState(false);
@@ -452,7 +462,12 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
 
     leafletMapRef.current = map;
 
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 150);
+
     return () => {
+      clearTimeout(timer);
       if (leafletMapRef.current) {
         leafletMapRef.current.remove();
         leafletMapRef.current = null;
@@ -594,7 +609,7 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
   };
 
   return (
-    <div className="relative w-full h-full min-h-[540px] rounded-2xl overflow-hidden glass-panel border border-slate-200 shadow-md flex flex-col min-w-0">
+    <div className="relative w-full h-[540px] sm:h-[580px] min-h-[540px] rounded-2xl overflow-hidden glass-panel border border-slate-200 shadow-md flex flex-col min-w-0">
       
       {/* Top Floating Control Bar */}
       <div className="absolute top-2.5 sm:top-3.5 left-2.5 sm:left-3.5 z-[1000] flex flex-wrap items-center gap-1.5 sm:gap-2 bg-white/95 backdrop-blur-md p-1 sm:p-1.5 rounded-2xl border border-slate-200/90 shadow-lg max-w-[calc(100%-20px)]">
@@ -654,7 +669,12 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
             {['ROADMAP', 'SATELLITE', 'HYBRID'].map((mode) => (
               <button
                 key={mode}
-                onClick={() => setGoogleMapMode(mode)}
+                onClick={() => {
+                  setGoogleMapMode(mode);
+                  if (googleMapInstance) {
+                    googleMapInstance.setMapTypeId(mode.toLowerCase());
+                  }
+                }}
                 className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
                   googleMapMode === mode 
                     ? 'bg-white text-slate-900 shadow-2xs' 
@@ -838,8 +858,8 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
         /* Leaflet OpenGIS Map Rendering (Active by default, 100% working) */
         <div 
           ref={leafletContainerRef} 
-          className="w-full h-full flex-1 z-0 relative bg-slate-100" 
-          style={{ minHeight: '520px' }}
+          className="w-full h-full min-h-[540px] z-0 relative bg-slate-100 flex-1" 
+          style={{ minHeight: '540px' }}
         />
       )}
 
