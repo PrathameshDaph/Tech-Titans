@@ -247,33 +247,39 @@ export function getClientCopilotResponse(query, activeRole, state) {
   const cong = state?.kpis?.avg_road_congestion_pct || 48.6;
   const isSurge = state?.active_scenario != null;
 
-  if (q.includes("turnstile") || q.includes("gate") || q.includes("queue")) {
-    return {
-      response_text: `🔍 **Turnstile Ingress Analysis (${time})**:\n- **Grand Stadium (Venue 1)**: Current queue is **${state?.kpis?.avg_turnstile_queue_mins || 3.8} mins** with 24 biometric lanes.\n- **Tech Dome (Venue 2)**: Inflow at 210 pax/min.\n- **Action Recommendation**: Divert 30% of incoming attendee flow to Gate West using the Interactive Wayfinding Screens.`,
-      suggested_actions: ["Reroute to Gate West", "Deploy Auxiliary Scanners"],
-      affected_entities: ["venue-1", "gate-west"]
-    };
-  }
+  let ans = "";
+  let actions = ["Run AI Forecast", "Simulate Scenario", "Compare Before vs After"];
 
-  if (q.includes("transit") || q.includes("shuttle") || q.includes("metro") || q.includes("bus")) {
-    return {
-      response_text: `🚄 **Multi-Modal Transit Dispatch Assessment**:\n- **HyperMetro Hub**: Wait times at **${state?.kpis?.avg_transit_wait_mins || state?.kpis?.avg_transit_wait_time_mins || 4.7} mins** across 18 active train sets.\n- **North Express Shuttle Depot**: 24 coaches active, frequency 3.0 mins.\n- **Optimization Status**: OR-Tools solver recommends dynamic shuttle buffering on Olympic Boulevard.`,
-      suggested_actions: ["Dispatch 6 Shuttles to Central Hub", "Trigger Dynamic Lane Reversal"],
-      affected_entities: ["transit-1", "transit-2", "road-1"]
-    };
-  }
-
-  if (q.includes("optimize") || q.includes("solver") || q.includes("or-tools") || q.includes("intervention")) {
-    return {
-      response_text: `⚡ **Mathematical Optimization Rationale**:\nThe OR-Tools Mixed-Integer Linear Program (MILP) balances 3 competing objective functions:\n1. **Minimizing attendee transit wait times** (Weight: 40%)\n2. **Minimizing arterial road congestion** (Weight: 35%)\n3. **Maximizing rapid evacuation corridor readiness** (Weight: 25%)\n\nResult: 4 coordinated interventions yield a projected **65.4% improvement** across the district.`,
-      suggested_actions: ["Apply All 4 Interventions", "Review Before/After Analytics"],
-      affected_entities: ["district-wide"]
-    };
+  if (q.includes("turnstile") || q.includes("gate") || q.includes("stadium") || q.includes("bottleneck") || q.includes("why is grand stadium")) {
+    ans = `🔍 **Turnstile & Arena Ingress Analysis (${time})**:\n- **Global Grand Stadium (Venue 1)**: Occupancy is at **${state?.venues?.[0]?.occupancy_pct || 67.8}%** (${(state?.venues?.[0]?.current_occupancy || 54200).toLocaleString()} pax) with inflow of 320 pax/min.\n- **Queue Dynamics**: Turnstile average wait is currently **${state?.kpis?.avg_turnstile_queue_mins || 3.8} mins**.\n- **AI Recommendation**: Divert 30% of incoming spectator flow to Gate West Plaza using digital wayfinding signage to avoid concourse crush.`;
+    actions = ["Reroute to Gate West", "Deploy Auxiliary Scanners", "Run OR-Tools Solver"];
+  } else if (q.includes("transit") || q.includes("shuttle") || q.includes("metro") || q.includes("bus") || q.includes("headway")) {
+    ans = `🚄 **Multi-Modal Transit Dispatch Assessment (${time})**:\n- **HyperMetro Central Hub**: Wait times at **${state?.kpis?.avg_transit_wait_mins || state?.kpis?.avg_transit_wait_time_mins || 4.7} mins** across 18 high-capacity train sets.\n- **North Express Shuttle Depot**: 24 coaches active with 3.0 min dispatch headways.\n- **South Multi-Modal Plaza**: Inflow steady at 2,900 waiting passengers.\n- **Optimization Status**: Recommended deploying the 18-shuttle express bridge to absorb venue egress waves.`;
+    actions = ["Dispatch 6 Shuttles to Central Hub", "Trigger Dynamic Lane Reversal", "Check Station Telemetry"];
+  } else if (q.includes("optimize") || q.includes("solver") || q.includes("or-tools") || q.includes("recommendation") || q.includes("explain")) {
+    ans = `⚡ **Mathematical Optimization Rationale (OR-Tools MIP Engine)**:\nThe Mixed-Integer Linear Program (MILP) balances 3 competing objective functions:\n1. **Minimizing attendee transit wait times** (Weight: 40%)\n2. **Minimizing arterial road congestion** (Weight: 35%)\n3. **Maximizing rapid evacuation corridor readiness** (Weight: 25%)\n\n**Key Result**: 4 coordinated interventions (` + "`" + `DEPLOY_SHUTTLE_BRIDGE` + "`" + `, ` + "`" + `DYNAMIC_LANE_REVERSAL` + "`" + `, ` + "`" + `REDISTRIBUTE_PEDESTRIANS` + "`" + `, ` + "`" + `ACTIVATE_HOTEL_BUFFER` + "`" + `) yield a projected **65.4% congestion reduction** and **81.4% wait time drop**.`;
+    actions = ["Apply All 4 Interventions", "Review Before/After Analytics", "View Decision Matrix"];
+  } else if (q.includes("police") || q.includes("safety") || q.includes("security") || q.includes("briefing") || q.includes("risk")) {
+    ans = `🛡️ **Public Safety & Police Command Briefing (${time})**:\n- **District Risk Index**: Nominal (Level 1 / 100)\n- **Active Bottlenecks**: ${state?.kpis?.critical_bottleneck_count || 0} critical chokepoints.\n- **Emergency Corridors**: 100% clear on Olympic Boulevard and West Gate Arterial.\n- **Weather Impact**: ${state?.weather?.condition || 'CLEAR'} (${state?.weather?.temperature_c || 24.5}°C, Wind: ${state?.weather?.wind_speed_kmh || 12} km/h).\n- **Protocol**: Standby units staged at Junction Central for quick-reaction cordon enforcement.`;
+    actions = ["Inspect Emergency Corridors", "Check Evacuation Readiness", "Simulate Crisis Scenario"];
+  } else if (q.includes("hotel") || q.includes("hospitality") || q.includes("buffer") || q.includes("accommodation") || q.includes("room")) {
+    ans = `🏨 **Hospitality & Emergency Buffer Status (${time})**:\n- **District Hotel Load**: Average **${state?.kpis?.hotel_utilization_pct || 88.5}%** occupied across 4 luxury clusters.\n- **Emergency Staging Buffer**: 630 ready suites prepared at Crown Grand Royale and Marina Bay Summit.\n- **VIP Accommodations**: Horizon Palace & Athlete Lodge synchronized with Olympic transport dispatch.`;
+    actions = ["Open Infrastructure Matrix", "Activate Hotel Staging Buffer", "View Concierge Feed"];
+  } else {
+    ans = `🤖 **EventFlow AI Copilot Briefing [${(activeRole || 'MASTER_ORCHESTRATOR').replace('_', ' ')}]**:\n- **Current Event Clock**: **${time}**\n- **Active Attendees**: **${(state?.kpis?.total_active_visitors || 115900).toLocaleString()} pax**\n- **Road Congestion**: **${cong}%** (${cong > 65 ? 'High Congestion' : 'Fluid Flow'})\n- **Transit Headway**: **${state?.kpis?.avg_transit_wait_mins || 4.7} mins**\n- **Active Incident Notices**: ${state?.alerts?.length || 2} operational items.\n\nAll real-time sensors, GIS digital twin coordinates, and optimization models are synchronized.`;
+    actions = ["Why is Grand Stadium bottlenecked?", "Explain OR-Tools recommendation", "Public Safety Briefing"];
   }
 
   return {
-    response_text: `🤖 **EventFlow Copilot Briefing for [${(activeRole || 'MASTER_ORCHESTRATOR').replace('_', ' ')}]**:\n- Current Event Time: **${time}**\n- Active District Attendees: **${(state?.kpis?.total_active_visitors || 115900).toLocaleString()}**\n- Average Road Congestion: **${cong}%**\n- Active Alert Level: **${state?.alerts?.length || 2} operational notices**.\n\nAll simulation parameters, routing algorithms, and multi-objective dispatch rules are running nominally.`,
-    suggested_actions: ["Run AI Forecast", "Simulate Scenario", "Compare Before vs After"],
-    affected_entities: ["venue-1", "venue-2", "transit-1"]
+    answer: ans,
+    response_text: ans,
+    text: ans,
+    suggested_actions: actions,
+    stakeholder_briefs: {
+      venue: "Ingress gated at nominal throughput.",
+      transit: "Headways optimized across 5 depots.",
+      safety: "All emergency egress corridors 100% operational."
+    },
+    confidence_score: 0.985
   };
 }

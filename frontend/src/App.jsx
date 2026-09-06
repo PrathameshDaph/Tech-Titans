@@ -222,11 +222,6 @@ export default function App() {
   };
 
   const handleCopilotQuery = async (queryText) => {
-    // Instant client AI response
-    const clientRes = getClientCopilotResponse(queryText, activeRole, telemetry);
-    setCopilotResponse(clientRes);
-
-    // Sync with backend if reachable
     try {
       const res = await fetch(`${API_BASE}/api/copilot/chat`, {
         method: 'POST',
@@ -240,6 +235,8 @@ export default function App() {
       }
     } catch (e) {}
 
+    const clientRes = getClientCopilotResponse(queryText, activeRole, telemetry);
+    setCopilotResponse(clientRes);
     return clientRes;
   };
 
