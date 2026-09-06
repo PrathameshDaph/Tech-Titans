@@ -135,6 +135,208 @@ const createVisitorIcon = (size, isRerouted) => {
   });
 };
 
+// Isolated Google Map Error Boundary to catch any script/runtime issues without crashing the app
+class GoogleMapErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("Google Maps rendering error:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="w-full h-full min-h-[520px] flex flex-col items-center justify-center p-6 bg-slate-900 text-white text-center rounded-2xl space-y-3">
+          <div className="p-3 bg-amber-500/20 text-amber-400 rounded-2xl border border-amber-500/30">
+            <AlertTriangle className="w-8 h-8" />
+          </div>
+          <h4 className="text-base font-bold text-white">Google Maps Loader Notice</h4>
+          <p className="text-xs text-slate-400 max-w-md">
+            {this.state.error?.message || 'Google Maps JS loader requires a page refresh with new API options.'}
+          </p>
+          <div className="flex items-center gap-2 pt-2">
+            <button
+              onClick={() => this.props.onSwitchToLeaflet()}
+              className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all"
+            >
+              Switch to Free OpenGIS Leaflet
+            </button>
+            <button
+              onClick={() => this.props.onOpenKeyModal()}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 cursor-pointer transition-all"
+            >
+              Update API Key
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// Subcomponent that only calls useJsApiLoader when rendered
+function GoogleMapsRenderer({
+  apiKey,
+  googleMapMode,
+  roads,
+  venues,
+  transitNodes,
+  hotels,
+  agents,
+  showRoadFlows,
+  showVehicles,
+  showHeatmap,
+  setSelectedEntity,
+  setGoogleMapInstance,
+  onSwitchToLeaflet,
+  onOpenKeyModal
+}) {
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: apiKey,
+    libraries: MAP_LIBRARIES
+  });
+
+  if (loadError) {
+    return (
+      <div className="w-full h-full min-h-[520px] flex flex-col items-center justify-center p-6 bg-slate-900 text-white text-center rounded-2xl space-y-3">
+        <div className="p-3 bg-rose-500/20 text-rose-400 rounded-2xl border border-rose-500/30">
+          <AlertTriangle className="w-8 h-8" />
+        </div>
+        <h4 className="text-base font-bold text-white">Google Maps Authentication Error</h4>
+        <p className="text-xs text-slate-400 max-w-md leading-relaxed">
+          {loadError.message || 'The Google Maps JavaScript API could not be verified. Ensure Maps JavaScript API is enabled in your Google Cloud Console.'}
+        </p>
+        <div className="flex items-center gap-2 pt-2">
+          <button
+            onClick={onSwitchToLeaflet}
+            className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all"
+          >
+            Use OpenGIS Engine (No Key Needed)
+          </button>
+          <button
+            onClick={onOpenKeyModal}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 cursor-pointer transition-all"
+          >
+            Change API Key
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="w-full h-full min-h-[520px] flex flex-col items-center justify-center bg-slate-900 text-white rounded-2xl space-y-2">
+        <div className="flex items-center gap-2.5 text-cyan-400 text-sm font-semibold">
+          <RefreshCw className="w-5 h-5 animate-spin" />
+          <span>Connecting to Google Maps Platform...</span>
+        </div>
+        <p className="text-xs text-slate-400">Streaming vector tiles and satellite feeds</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full flex-1 relative bg-slate-100" style={{ minHeight: '520px' }}>
+      <GoogleMap
+        mapContainerStyle={{ width: '100%', height: '100%' }}
+        center={DEFAULT_CENTER}
+        zoom={DEFAULT_ZOOM}
+        onLoad={setGoogleMapInstance}
+        options={{
+          disableDefaultUI: false,
+          zoomControl: true,
+          mapTypeId: googleMapMode.toLowerCase()
+        }}
+      >
+        {/* Heatmap Circles */}
+        {showHeatmap && venues.map(v => {
+          const isCrit = v.risk_level === 'CRITICAL';
+          return (
+            <GCircle
+              key={`heat-${v.id}`}
+              center={{ lat: v.lat, lng: v.lng }}
+              radius={Math.max(120, (v.current_occupancy || 5000) / 180)}
+              options={{
+                strokeColor: isCrit ? '#e11d48' : v.occupancy_pct > 80 ? '#d97706' : '#0284c7',
+                strokeOpacity: 0.8,
+                strokeWeight: 1.5,
+                fillColor: isCrit ? '#e11d48' : v.occupancy_pct > 80 ? '#f59e0b' : '#38bdf8',
+                fillOpacity: 0.25
+              }}
+            />
+          );
+        })}
+
+        {/* Roads */}
+        {showRoadFlows && roads.map(r => {
+          const pts = (r.coordinates || r.path_coords || []).map(p => ({ lat: p[0], lng: p[1] }));
+          if (pts.length < 2) return null;
+          const isClosed = r.is_closed || r.status === 'CLOSED';
+          return (
+            <GPolyline
+              key={r.id}
+              path={pts}
+              options={{
+                strokeColor: isClosed ? '#e11d48' : r.congestion_pct > 75 ? '#e11d48' : r.congestion_pct > 50 ? '#d97706' : '#0284c7',
+                strokeWeight: isClosed ? 6 : 4,
+                strokeOpacity: 0.9
+              }}
+              onClick={() => setSelectedEntity({ type: 'ROAD', data: r })}
+            />
+          );
+        })}
+
+        {/* Venues */}
+        {venues.map(v => (
+          <GMarker
+            key={v.id}
+            position={{ lat: v.lat, lng: v.lng }}
+            title={`${v.name} (${v.occupancy_pct}%)`}
+            onClick={() => setSelectedEntity({ type: 'VENUE', data: v })}
+          />
+        ))}
+
+        {/* Transit */}
+        {transitNodes.map(t => (
+          <GMarker
+            key={t.id}
+            position={{ lat: t.lat, lng: t.lng }}
+            title={`${t.name} (${t.avg_wait_time_mins}m wait)`}
+            onClick={() => setSelectedEntity({ type: 'TRANSIT', data: t })}
+          />
+        ))}
+
+        {/* Hotels */}
+        {hotels.map(h => (
+          <GMarker
+            key={h.id}
+            position={{ lat: h.lat, lng: h.lng }}
+            title={`${h.name} (${h.occupancy_pct}%)`}
+            onClick={() => setSelectedEntity({ type: 'HOTEL', data: h })}
+          />
+        ))}
+
+        {/* Vehicles */}
+        {showVehicles && agents.map(a => (
+          <GMarker
+            key={a.id}
+            position={{ lat: a.lat, lng: a.lng }}
+            title={`${a.type} (${a.speed_kmh} km/h)`}
+            onClick={() => setSelectedEntity({ type: 'AGENT', data: a })}
+          />
+        ))}
+      </GoogleMap>
+    </div>
+  );
+}
+
 export default function DigitalTwinMap({ telemetry, activeRole }) {
   // 1. API Key & Map Engine selection
   const envKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
@@ -142,19 +344,12 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
     return localStorage.getItem('EVENTFLOW_GMAPS_KEY') || envKey || '';
   });
   const [engine, setEngine] = useState(() => {
-    return (localStorage.getItem('EVENTFLOW_MAP_ENGINE') || (apiKey ? 'GOOGLE_MAPS' : 'LEAFLET'));
+    return localStorage.getItem('EVENTFLOW_MAP_ENGINE') || (apiKey ? 'GOOGLE_MAPS' : 'LEAFLET');
   });
   const [inputKey, setInputKey] = useState(apiKey);
   const [showKeyModal, setShowKeyModal] = useState(false);
 
-  // 2. Google Maps Loader
-  const { isLoaded: isGoogleLoaded, loadError: googleLoadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: apiKey,
-    libraries: MAP_LIBRARIES
-  });
-
-  // 3. Leaflet References
+  // 2. Leaflet References
   const leafletContainerRef = useRef(null);
   const leafletMapRef = useRef(null);
   const leafletTileLayerRef = useRef(null);
@@ -170,7 +365,7 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
   // Google Map ref
   const [googleMapInstance, setGoogleMapInstance] = useState(null);
 
-  // Map state
+  // Map display settings
   const [mapMode, setMapMode] = useState('VOYAGER'); // VOYAGER, DARK, SATELLITE, OSM
   const [googleMapMode, setGoogleMapMode] = useState('ROADMAP'); // ROADMAP, SATELLITE, HYBRID
   const [showHeatmap, setShowHeatmap] = useState(true);
@@ -195,6 +390,8 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
       setApiKey(cleanKey);
       setEngine('GOOGLE_MAPS');
       setShowKeyModal(false);
+      // Reload ensures Google Maps JS API script loader initializes cleanly with the new key
+      window.location.reload();
     }
   };
 
@@ -205,21 +402,30 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
     setInputKey('');
     setEngine('LEAFLET');
     setShowKeyModal(false);
+    window.location.reload();
   };
 
   const handleToggleEngine = (newEngine) => {
+    if (newEngine === 'GOOGLE_MAPS' && !apiKey) {
+      setShowKeyModal(true);
+      return;
+    }
     setEngine(newEngine);
     localStorage.setItem('EVENTFLOW_MAP_ENGINE', newEngine);
   };
 
   // Determine effective engine
-  const isGoogleActive = engine === 'GOOGLE_MAPS' && Boolean(apiKey) && isGoogleLoaded && !googleLoadError;
+  const isGoogleActive = engine === 'GOOGLE_MAPS' && Boolean(apiKey);
 
   // Initialize Leaflet Map Instance
   useEffect(() => {
     if (isGoogleActive) return;
     if (!leafletContainerRef.current) return;
-    if (leafletMapRef.current) return;
+
+    if (leafletMapRef.current) {
+      leafletMapRef.current.remove();
+      leafletMapRef.current = null;
+    }
 
     const map = L.map(leafletContainerRef.current, {
       center: DEFAULT_CENTER_ARR,
@@ -230,7 +436,7 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    const layerConfig = TILE_LAYERS.VOYAGER;
+    const layerConfig = TILE_LAYERS[mapMode] || TILE_LAYERS.VOYAGER;
     const tileLayer = L.tileLayer(layerConfig.url, {
       maxZoom: layerConfig.maxZoom,
       subdomains: layerConfig.subdomains || 'abc'
@@ -247,8 +453,10 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
     leafletMapRef.current = map;
 
     return () => {
-      map.remove();
-      leafletMapRef.current = null;
+      if (leafletMapRef.current) {
+        leafletMapRef.current.remove();
+        leafletMapRef.current = null;
+      }
     };
   }, [isGoogleActive]);
 
@@ -319,7 +527,7 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
 
         if (showHeatmap) {
           const circle = L.circle([venue.lat, venue.lng], {
-            radius: Math.max(120, venue.current_occupancy / 180),
+            radius: Math.max(120, (venue.current_occupancy || 5000) / 180),
             color: isCrit ? '#e11d48' : venue.occupancy_pct > 80 ? '#d97706' : '#0284c7',
             fillColor: isCrit ? '#e11d48' : venue.occupancy_pct > 80 ? '#f59e0b' : '#38bdf8',
             fillOpacity: 0.2,
@@ -542,7 +750,7 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
           <div className="bg-white w-full max-w-md rounded-3xl p-6 border border-slate-200 shadow-2xl space-y-4 relative">
             <button
               onClick={() => setShowKeyModal(false)}
-              className="absolute top-5 right-5 p-1.5 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-800"
+              className="absolute top-5 right-5 p-1.5 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-800 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -556,7 +764,7 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
                   Google Maps API Configuration
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Enter your Google Maps Platform JavaScript API Key
+                  Enter your Google Cloud Maps JavaScript API Key
                 </p>
               </div>
             </div>
@@ -564,7 +772,7 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
             <form onSubmit={handleSaveApiKey} className="space-y-3 pt-2">
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">
-                  API Key:
+                  Google Maps API Key:
                 </label>
                 <input
                   type="text"
@@ -576,8 +784,8 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
               </div>
 
               <div className="text-[11px] text-slate-500 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
-                <p>💡 <strong>Note:</strong> EventFlow AI already includes a fully interactive <strong>OpenGIS Leaflet Engine</strong> out of the box with zero setup.</p>
-                <p>If you have a Google Maps API Key with Maps JavaScript API enabled, paste it here to activate official Google Maps tiles.</p>
+                <p>💡 <strong>Note:</strong> EventFlow AI already includes a fast, zero-dependency <strong>OpenGIS Leaflet Engine</strong> out of the box.</p>
+                <p>If you wish to use Google Maps Platform satellite & vector tiles, enter your key and click Save. The app will activate Google Maps mode.</p>
               </div>
 
               <div className="flex items-center gap-2 pt-1">
@@ -604,75 +812,28 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
 
       {/* Main Map Render Area */}
       {isGoogleActive ? (
-        /* Google Maps Rendering */
-        <div className="w-full h-full flex-1 relative bg-slate-100" style={{ minHeight: '520px' }}>
-          <GoogleMap
-            mapContainerStyle={{ width: '100%', height: '100%' }}
-            center={DEFAULT_CENTER}
-            zoom={DEFAULT_ZOOM}
-            onLoad={setGoogleMapInstance}
-            options={{
-              disableDefaultUI: false,
-              zoomControl: true,
-              mapTypeId: googleMapMode.toLowerCase()
-            }}
-          >
-            {/* Roads */}
-            {showRoadFlows && roads.map(r => {
-              const pts = (r.coordinates || r.path_coords || []).map(p => ({ lat: p[0], lng: p[1] }));
-              if (pts.length < 2) return null;
-              const isClosed = r.is_closed || r.status === 'CLOSED';
-              return (
-                <GPolyline
-                  key={r.id}
-                  path={pts}
-                  options={{
-                    strokeColor: isClosed ? '#e11d48' : r.congestion_pct > 75 ? '#e11d48' : r.congestion_pct > 50 ? '#d97706' : '#0284c7',
-                    strokeWeight: isClosed ? 6 : 4,
-                    strokeOpacity: 0.9
-                  }}
-                  onClick={() => setSelectedEntity({ type: 'ROAD', data: r })}
-                />
-              );
-            })}
-
-            {/* Venues */}
-            {venues.map(v => (
-              <GMarker
-                key={v.id}
-                position={{ lat: v.lat, lng: v.lng }}
-                onClick={() => setSelectedEntity({ type: 'VENUE', data: v })}
-              />
-            ))}
-
-            {/* Transit */}
-            {transitNodes.map(t => (
-              <GMarker
-                key={t.id}
-                position={{ lat: t.lat, lng: t.lng }}
-                onClick={() => setSelectedEntity({ type: 'TRANSIT', data: t })}
-              />
-            ))}
-
-            {/* Hotels */}
-            {hotels.map(h => (
-              <GMarker
-                key={h.id}
-                position={{ lat: h.lat, lng: h.lng }}
-                onClick={() => setSelectedEntity({ type: 'HOTEL', data: h })}
-              />
-            ))}
-
-            {/* Vehicles */}
-            {showVehicles && agents.map(a => (
-              <GMarker
-                key={a.id}
-                position={{ lat: a.lat, lng: a.lng }}
-                onClick={() => setSelectedEntity({ type: 'AGENT', data: a })}
-              />
-            ))}
-          </GoogleMap>
-        </div>
+        <GoogleMapErrorBoundary
+          onSwitchToLeaflet={() => handleToggleEngine('LEAFLET')}
+          onOpenKeyModal={() => setShowKeyModal(true)}
+        >
+          <GoogleMapsRenderer
+            key={apiKey}
+            apiKey={apiKey}
+            googleMapMode={googleMapMode}
+            roads={roads}
+            venues={venues}
+            transitNodes={transitNodes}
+            hotels={hotels}
+            agents={agents}
+            showRoadFlows={showRoadFlows}
+            showVehicles={showVehicles}
+            showHeatmap={showHeatmap}
+            setSelectedEntity={setSelectedEntity}
+            setGoogleMapInstance={setGoogleMapInstance}
+            onSwitchToLeaflet={() => handleToggleEngine('LEAFLET')}
+            onOpenKeyModal={() => setShowKeyModal(true)}
+          />
+        </GoogleMapErrorBoundary>
       ) : (
         /* Leaflet OpenGIS Map Rendering (Active by default, 100% working) */
         <div 
