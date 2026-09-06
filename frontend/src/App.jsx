@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Topbar from './components/Dashboard/Topbar';
 import KpiCards from './components/Dashboard/KpiCards';
 import RoleOperationalBanner from './components/Dashboard/RoleOperationalBanner';
@@ -11,23 +11,49 @@ import LiveAlertFeed from './components/Dashboard/LiveAlertFeed';
 import BeforeAfterModal from './components/Dashboard/BeforeAfterModal';
 import HospitalityTransportModal from './components/Dashboard/HospitalityTransportModal';
 import { Sparkles, HelpCircle, ChevronRight, CheckCircle, ArrowRight, Play, Zap, GitCompare } from 'lucide-react';
+import { clientSim } from './simulation/clientSimulator';
+import { 
+  getClientPredictions, 
+  getClientOptimization, 
+  getClientBeforeAfter, 
+  getClientCopilotResponse 
+} from './simulation/clientAI';
 
 const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8000';
 
 export default function App() {
-  const [telemetry, setTelemetry] = useState(null);
+  // Always initialize with instant, fully populated digital twin telemetry
+  const [telemetry, setTelemetry] = useState(() => clientSim.getTelemetryState());
   const [activeRole, setActiveRole] = useState('MASTER_ORCHESTRATOR');
-  const [predictions, setPredictions] = useState(null);
+  const [predictions, setPredictions] = useState(() => getClientPredictions(clientSim.getTelemetryState()));
   const [optimizationData, setOptimizationData] = useState(null);
   const [copilotResponse, setCopilotResponse] = useState(null);
-  const [beforeAfterData, setBeforeAfterData] = useState(null);
+  const [beforeAfterData, setBeforeAfterData] = useState(() => getClientBeforeAfter(false));
   
   // Modals
   const [isBeforeAfterOpen, setIsBeforeAfterOpen] = useState(false);
   const [isInfraModalOpen, setIsInfraModalOpen] = useState(false);
   const [demoStep, setDemoStep] = useState(1);
 
-  // 1. Initial State Fetch and WebSocket Connection
+  // 1. Live Simulation Ticking Loop (Local client-side digital twin)
+  useEffect(() => {
+    const isRunning = telemetry?.is_running ?? true;
+    const speed = telemetry?.speed_multiplier ?? 1.0;
+    
+    if (!isRunning) return;
+
+    // Interval inversely proportional to speed (default 1000ms at 1x, 500ms at 2x, 200ms at 5x)
+    const intervalMs = Math.max(150, Math.floor(1000 / speed));
+
+    const timer = setInterval(() => {
+      const nextState = clientSim.step();
+      setTelemetry(nextState);
+    }, intervalMs);
+
+    return () => clearInterval(timer);
+  }, [telemetry?.is_running, telemetry?.speed_multiplier]);
+
+  // 2. Initial State Fetch and WebSocket Connection (with live server sync if available)
   const fetchState = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/simulation/state`);
@@ -36,7 +62,7 @@ export default function App() {
         setTelemetry(data);
       }
     } catch (e) {
-      console.warn("Polling fallback:", e);
+      // Graceful fallback to client simulator
     }
   }, []);
 
@@ -46,17 +72,18 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         setPredictions(data);
+        return;
       }
-    } catch (e) {
-      console.error("Failed to fetch predictions:", e);
-    }
+    } catch (e) {}
+    // Client AI fallback
+    setPredictions(getClientPredictions(clientSim.getTelemetryState()));
   }, []);
 
   useEffect(() => {
     fetchState();
     fetchPredictions();
 
-    // Setup WebSocket
+    // Setup WebSocket if available
     let ws;
     try {
       let wsUrl = import.meta.env.VITE_WS_URL;
@@ -77,12 +104,12 @@ export default function App() {
         } catch (err) {}
       };
       ws.onerror = () => {
-        console.log("WebSocket fallback to polling");
+        // Fallback to local simulator
       };
     } catch (e) {}
 
-    // Polling fallback
-    const interval = setInterval(fetchState, 1500);
+    // Polling fallback to server if online
+    const interval = setInterval(fetchState, 3000);
 
     return () => {
       if (ws) ws.close();
@@ -90,90 +117,136 @@ export default function App() {
     };
   }, [fetchState, fetchPredictions]);
 
-  // 2. Control Handlers
+  // 3. Instant Simulation Control Handlers
   const handleToggleSim = async () => {
-    const isRunning = telemetry?.is_running ?? true;
-    const endpoint = isRunning ? '/api/simulation/pause' : '/api/simulation/start';
-    await fetch(`${API_BASE}${endpoint}`, { method: 'POST' });
-    fetchState();
+    const currentRunning = telemetry?.is_running ?? true;
+    const nextRunning = !currentRunning;
+    const updated = clientSim.setRunning(nextRunning);
+    setTelemetry(updated);
+
+    // Sync with backend if reachable
+    try {
+      const endpoint = nextRunning ? '/api/simulation/start' : '/api/simulation/pause';
+      await fetch(`${API_BASE}${endpoint}`, { method: 'POST' });
+    } catch (e) {}
   };
 
   const handleSetSpeed = async (speed) => {
-    await fetch(`${API_BASE}/api/simulation/speed`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ multiplier: speed })
-    });
-    fetchState();
+    const updated = clientSim.setSpeed(speed);
+    setTelemetry(updated);
+
+    // Sync with backend if reachable
+    try {
+      await fetch(`${API_BASE}/api/simulation/speed`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ multiplier: speed })
+      });
+    } catch (e) {}
   };
 
   const handleResetSim = async () => {
-    await fetch(`${API_BASE}/api/simulation/reset`, { method: 'POST' });
+    const updated = clientSim.reset();
+    setTelemetry(updated);
     setOptimizationData(null);
     setDemoStep(1);
-    fetchState();
-    fetchPredictions();
+    setPredictions(getClientPredictions(updated));
+    setBeforeAfterData(getClientBeforeAfter(false));
+
+    // Sync with backend if reachable
+    try {
+      await fetch(`${API_BASE}/api/simulation/reset`, { method: 'POST' });
+      fetchState();
+      fetchPredictions();
+    } catch (e) {}
   };
 
   const handleTriggerScenario = async (scenarioReq) => {
-    const res = await fetch(`${API_BASE}/api/scenarios/trigger`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(scenarioReq)
-    });
+    const updated = clientSim.triggerScenario(scenarioReq.scenario_type);
+    setTelemetry(updated);
     setDemoStep(2);
-    fetchState();
-    fetchPredictions();
-    return res.json();
+    setPredictions(getClientPredictions(updated));
+
+    // Sync with backend if reachable
+    try {
+      const res = await fetch(`${API_BASE}/api/scenarios/trigger`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(scenarioReq)
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {}
+
+    return { status: "TRIGGERED", scenario: scenarioReq.scenario_type };
   };
 
   const handleRunOptimization = async () => {
-    const res = await fetch(`${API_BASE}/api/optimization/run`, { method: 'POST' });
-    if (res.ok) {
-      const data = await res.json();
-      setOptimizationData(data);
-      setDemoStep(3);
-    }
+    // Generate Pareto Optimal solution instantly
+    const optResult = getClientOptimization(telemetry);
+    setOptimizationData(optResult);
+    setDemoStep(3);
+
+    // Sync with backend if reachable
+    try {
+      const res = await fetch(`${API_BASE}/api/optimization/run`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setOptimizationData(data);
+      }
+    } catch (e) {}
   };
 
   const handleApplyOptimization = async (interventions) => {
-    const res = await fetch(`${API_BASE}/api/optimization/apply`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ interventions: interventions || [
-        "DEPLOY_SHUTTLE_BRIDGE",
-        "REDISTRIBUTE_PEDESTRIANS",
-        "DYNAMIC_LANE_REVERSAL",
-        "ACTIVATE_HOTEL_BUFFER"
-      ]})
-    });
-    if (res.ok) {
-      setDemoStep(4);
-      fetchState();
-      fetchPredictions();
-      // Fetch Before-After Data
-      const baRes = await fetch(`${API_BASE}/api/kpis/before-after`);
-      if (baRes.ok) {
-        const baData = await baRes.json();
-        setBeforeAfterData(baData);
-      }
-    }
+    const updated = clientSim.applyOptimizations(interventions);
+    setTelemetry(updated);
+    setDemoStep(4);
+    setPredictions(getClientPredictions(updated));
+    const ba = getClientBeforeAfter(true);
+    setBeforeAfterData(ba);
+
+    // Sync with backend if reachable
+    try {
+      await fetch(`${API_BASE}/api/optimization/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interventions: interventions || [
+          "DEPLOY_SHUTTLE_BRIDGE",
+          "REDISTRIBUTE_PEDESTRIANS",
+          "DYNAMIC_LANE_REVERSAL",
+          "ACTIVATE_HOTEL_BUFFER"
+        ]})
+      });
+    } catch (e) {}
   };
 
   const handleCopilotQuery = async (queryText) => {
-    const res = await fetch(`${API_BASE}/api/copilot/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: queryText, role: activeRole })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setCopilotResponse(data);
-      return data;
-    }
+    // Instant client AI response
+    const clientRes = getClientCopilotResponse(queryText, activeRole, telemetry);
+    setCopilotResponse(clientRes);
+
+    // Sync with backend if reachable
+    try {
+      const res = await fetch(`${API_BASE}/api/copilot/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: queryText, role: activeRole })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCopilotResponse(data);
+        return data;
+      }
+    } catch (e) {}
+
+    return clientRes;
   };
 
   const handleOpenBeforeAfter = async () => {
+    const isOpt = (telemetry?.applied_optimizations?.length || 0) > 0;
+    setBeforeAfterData(getClientBeforeAfter(isOpt));
+
     try {
       const res = await fetch(`${API_BASE}/api/kpis/before-after`);
       if (res.ok) {
@@ -181,6 +254,7 @@ export default function App() {
         setBeforeAfterData(data);
       }
     } catch (e) {}
+
     setIsBeforeAfterOpen(true);
   };
 
@@ -220,7 +294,7 @@ export default function App() {
         {/* KPI Cards Row */}
         <KpiCards kpis={telemetry?.kpis} activeRole={activeRole} />
 
-        {/* Responsive Demo Walkthrough Flow Bar (100% visible at 100% zoom across 1366x768, 1440x900, 1920x1080) */}
+        {/* Responsive Demo Walkthrough Flow Bar */}
         <div className="glass-panel p-2.5 sm:p-3 rounded-2xl border border-slate-200 shadow-sm bg-gradient-to-r from-sky-50 via-white to-purple-50 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 text-xs min-w-0">
           <div className="flex items-center gap-2 shrink-0 px-1">
             <span className="px-2 py-0.5 rounded-md bg-cyan-600 text-white font-extrabold text-[10px] tracking-wider uppercase shadow-xs">
@@ -234,7 +308,7 @@ export default function App() {
             {/* Step 1 */}
             <button
               onClick={() => handleDemoStepClick(1)}
-              className={`flex items-center justify-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all min-w-0 ${
+              className={`flex items-center justify-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all min-w-0 cursor-pointer ${
                 demoStep === 1 
                   ? 'bg-cyan-100 text-cyan-900 border border-cyan-300 shadow-xs scale-[1.01]' 
                   : 'bg-white/80 hover:bg-white text-slate-600 border border-slate-200 hover:text-slate-900'
@@ -247,114 +321,131 @@ export default function App() {
             {/* Step 2 */}
             <button
               onClick={() => handleDemoStepClick(2)}
-              className={`flex items-center justify-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all min-w-0 ${
+              className={`flex items-center justify-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all min-w-0 cursor-pointer ${
                 demoStep === 2 
-                  ? 'bg-rose-100 text-rose-900 border border-rose-300 shadow-xs scale-[1.01]' 
+                  ? 'bg-amber-100 text-amber-900 border border-amber-300 shadow-xs scale-[1.01]' 
                   : 'bg-white/80 hover:bg-white text-slate-600 border border-slate-200 hover:text-slate-900'
               }`}
             >
-              <span className="w-4 h-4 rounded-full bg-rose-600 text-white text-[10px] flex items-center justify-center font-mono shrink-0">2</span>
-              <span className="truncate">Trigger Surge / Crisis</span>
+              <span className="w-4 h-4 rounded-full bg-amber-600 text-white text-[10px] flex items-center justify-center font-mono shrink-0">2</span>
+              <span className="truncate">Trigger Surge / Stress</span>
             </button>
 
             {/* Step 3 */}
             <button
               onClick={() => handleDemoStepClick(3)}
-              className={`flex items-center justify-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all min-w-0 ${
+              className={`flex items-center justify-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all min-w-0 cursor-pointer ${
                 demoStep === 3 
-                  ? 'bg-amber-100 text-amber-900 border border-amber-300 shadow-xs scale-[1.01]' 
+                  ? 'bg-indigo-100 text-indigo-900 border border-indigo-300 shadow-xs scale-[1.01]' 
                   : 'bg-white/80 hover:bg-white text-slate-600 border border-slate-200 hover:text-slate-900'
               }`}
             >
-              <span className="w-4 h-4 rounded-full bg-amber-600 text-white text-[10px] flex items-center justify-center font-mono shrink-0">3</span>
+              <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center font-mono shrink-0">3</span>
               <span className="truncate">Run OR-Tools Solver</span>
             </button>
 
-            {/* Step 4: Prominently Visible & Clickable */}
+            {/* Step 4 */}
             <button
               onClick={() => handleDemoStepClick(4)}
-              className={`flex items-center justify-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-black transition-all min-w-0 ${
+              className={`flex items-center justify-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all min-w-0 cursor-pointer ${
                 demoStep === 4 
-                  ? 'bg-emerald-100 text-emerald-900 border border-emerald-400 shadow-xs scale-[1.01]' 
-                  : 'bg-gradient-to-r from-emerald-50 to-teal-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs'
+                  ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-xs scale-[1.01]' 
+                  : 'bg-white/80 hover:bg-white text-slate-600 border border-slate-200 hover:text-slate-900'
               }`}
-              title="Apply Recommendations & Open Before vs After Comparison"
             >
               <span className="w-4 h-4 rounded-full bg-emerald-600 text-white text-[10px] flex items-center justify-center font-mono shrink-0">4</span>
-              <span className="truncate">Apply & Compare Before vs After</span>
+              <span className="truncate">Apply & Verify Impact</span>
             </button>
           </div>
         </div>
 
-        {/* Active Role Operational Lens Banner */}
-        <RoleOperationalBanner
-          activeRole={activeRole}
-          telemetry={telemetry}
+        {/* Role-Specific Operational Directive Banner */}
+        <RoleOperationalBanner 
+          activeRole={activeRole} 
+          telemetry={telemetry} 
           onOpenInfraModal={() => setIsInfraModalOpen(true)}
         />
 
-        {/* 2-Column Master Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 min-w-0">
-          {/* Left / Center Column (7 Cols): Digital Twin Map + Sandbox + Optimization */}
-          <div className="lg:col-span-7 flex flex-col gap-4 min-w-0">
-            {/* Main Interactive Map (Google Maps 2D) */}
-            <div className="h-[520px] w-full min-w-0">
-              <DigitalTwinMap
-                telemetry={telemetry}
-                activeRole={activeRole}
+        {/* Core Digital Twin Dashboard Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start w-full min-w-0">
+          
+          {/* Main Map & Live Visual Digital Twin (7 cols on lg, 8 cols on xl) */}
+          <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-4 min-w-0 w-full">
+            {/* Map Container */}
+            <div className="glass-panel p-2.5 sm:p-3.5 rounded-2xl border border-slate-200/90 shadow-sm relative overflow-hidden min-w-0">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-cyan-500 animate-pulse"></div>
+                  <h3 className="text-sm font-bold text-slate-900 font-heading tracking-tight">
+                    District Geographic Digital Twin
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-mono text-slate-500 font-semibold">
+                    {telemetry?.agents?.length || 56} Tracked Fleet & Cohorts
+                  </span>
+                </div>
+              </div>
+
+              {/* Digital Twin Map View */}
+              <DigitalTwinMap 
+                telemetry={telemetry} 
+                activeRole={activeRole} 
               />
             </div>
 
-            {/* Scenario Sandbox & What-If Controls */}
-            <ScenarioSandbox
-              activeScenario={telemetry?.active_scenario}
-              onTriggerScenario={handleTriggerScenario}
-              onResetSim={handleResetSim}
+            {/* Predictive Intelligence Panel */}
+            <PredictionPanel 
+              predictions={predictions} 
+              activeRole={activeRole} 
             />
 
-            {/* Google OR-Tools Optimization Panel */}
-            <OptimizationPanel
+            {/* Scenario Sandbox */}
+            <ScenarioSandbox 
+              onTriggerScenario={handleTriggerScenario}
+              activeScenario={telemetry?.active_scenario}
+            />
+          </div>
+
+          {/* Right AI Copilot & Optimization Column (5 cols on lg, 4 cols on xl) */}
+          <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-4 min-w-0 w-full">
+            
+            {/* Multi-Objective Optimization Engine */}
+            <OptimizationPanel 
               optimizationData={optimizationData}
               onRunOptimization={handleRunOptimization}
               onApplyOptimization={handleApplyOptimization}
               isOptimized={isOptimized}
-            />
-          </div>
-
-          {/* Right Column (5 Cols): AI Prediction Horizon + Copilot Chat + Live Alert Feed */}
-          <div className="lg:col-span-5 flex flex-col gap-4 min-w-0">
-            {/* AI Predictive Horizon */}
-            <PredictionPanel
-              predictions={predictions}
-              onRefreshPredictions={fetchPredictions}
-              isOptimized={isOptimized}
+              onOpenBeforeAfter={handleOpenBeforeAfter}
             />
 
-            {/* AI Event Copilot Chat */}
-            <AICopilotChat
-              copilotResponse={copilotResponse}
-              onSendQuery={handleCopilotQuery}
+            {/* AI Copilot Interactive Chat */}
+            <AICopilotChat 
               activeRole={activeRole}
+              onSendQuery={handleCopilotQuery}
+              copilotResponse={copilotResponse}
               telemetry={telemetry}
             />
 
-            {/* Live Alerts Stream */}
-            <LiveAlertFeed
-              alerts={telemetry?.alerts}
+            {/* Live Operational Alerts Feed */}
+            <LiveAlertFeed 
+              alerts={telemetry?.alerts} 
             />
+
           </div>
+
         </div>
       </main>
 
-      {/* Modals */}
-      <BeforeAfterModal
+      {/* Before vs After Impact Analysis Modal */}
+      <BeforeAfterModal 
         isOpen={isBeforeAfterOpen}
         onClose={() => setIsBeforeAfterOpen(false)}
         comparisonData={beforeAfterData}
-        isOptimized={isOptimized}
       />
 
-      <HospitalityTransportModal
+      {/* Hospitality & Transport Multi-Modal Matrix Modal */}
+      <HospitalityTransportModal 
         isOpen={isInfraModalOpen}
         onClose={() => setIsInfraModalOpen(false)}
         telemetry={telemetry}
