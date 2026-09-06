@@ -365,9 +365,11 @@ export default function DigitalTwinMap({ telemetry, activeRole }) {
           >
             {/* Road Congestion Polylines */}
             {showRoadFlows && roads.map((road) => {
-              const path = road.coordinates.map(coord => ({ lat: coord[0], lng: coord[1] }));
+              const rawCoords = road.coordinates || road.path_coords || [];
+              const path = rawCoords.map(coord => ({ lat: coord[0], lng: coord[1] }));
               const color = getRoadColor(road);
               const isClosed = road.is_closed || road.status === 'CLOSED';
+              if (path.length === 0) return null;
               return (
                 <Polyline
                   key={road.id}

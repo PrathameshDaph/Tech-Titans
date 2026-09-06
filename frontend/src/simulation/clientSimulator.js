@@ -409,13 +409,20 @@ export function createInitialAlerts() {
 export function createInitialKPIs() {
   return {
     total_active_visitors: 115900,
+    total_transport_passengers: 28400,
     peak_expected_visitors: 165000,
     avg_road_congestion_pct: 48.6,
+    avg_transit_wait_mins: 4.7,
     avg_transit_wait_time_mins: 4.7,
     avg_turnstile_queue_mins: 3.8,
+    peak_venue_occupancy_pct: 81.4,
+    critical_bottleneck_count: 0,
     active_critical_bottlenecks: 0,
+    safety_risk_index: 12.5,
     evacuation_readiness_pct: 94.2,
+    hotel_utilization_pct: 88.5,
     hotel_buffer_utilization_pct: 88.5,
+    carbon_emissions_kg_hr: 68.4,
     carbon_emission_index: 68.4
   };
 }

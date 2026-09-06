@@ -15,11 +15,15 @@ export function getClientPredictions(state) {
     const risk = projectedCong > 75 ? "CRITICAL" : projectedCong > 55 ? "HIGH" : "MODERATE";
 
     return {
+      horizon_minutes: h,
       horizon_mins: h,
       target_timestamp: `+${h}m`,
+      predicted_visitors: projectedPax,
       projected_active_visitors: projectedPax,
+      predicted_congestion_index: Number(projectedCong.toFixed(1)),
       predicted_avg_congestion_pct: Number(projectedCong.toFixed(1)),
       predicted_risk_level: risk,
+      risk_level: risk,
       bottleneck_probability: Number((projectedCong / 100).toFixed(2)),
       venue_risk_levels: {
         "venue-1": isSurge ? 94.0 : 68.0,
@@ -27,6 +31,11 @@ export function getClientPredictions(state) {
         "venue-3": 65.0,
         "venue-4": 62.0
       },
+      bottleneck_zones: [
+        isSurge ? "Grand Stadium Gate A (Turnstiles Overload)" : "Olympic Boulevard Corridor",
+        "Central HyperMetro Ingress",
+        "Tech Dome Plaza"
+      ],
       transit_wait_forecast_mins: Number((4.5 + factor * (isSurge ? 8.0 : 1.5)).toFixed(1))
     };
   });
@@ -34,6 +43,7 @@ export function getClientPredictions(state) {
   return {
     timestamp: state?.event_time || "19:45:00",
     prediction_engine: "Gradient Boosting & Recurrent Flow Predictor v2.0",
+    algorithm: "XGBoost & Temporal Graph Neural Predictor",
     confidence_score: 0.942,
     horizons,
     key_findings: [
@@ -69,44 +79,79 @@ export function getClientOptimization(state) {
 
   return {
     status: "OPTIMAL_FOUND",
+    solver_status: "OPTIMAL_FOUND",
     solver_engine: "Google OR-Tools SCIP & MIP Multi-Objective Solver",
     solve_duration_ms: 184.2,
+    solve_time_ms: 184.2,
     objective_score: 96.8,
+    objective_value: 96.8,
     summary: "Mathematical Multi-Objective Pareto Optimal Dispatch Strategy generated. Congestion reduction: -65.4%, Wait time improvement: -81.4%.",
     recommendations: [
       {
         id: "REC-101",
         type: "FLEET_REALLOCATION",
+        domain: "TRANSIT",
+        priority: "CRITICAL",
         title: "Deploy 18 High-Capacity Express Shuttles from North Depot",
+        action_summary: "Reallocate 18 auxiliary coaches from North Express Depot to Grand Stadium & HyperMetro Central Hub.",
         description: "Reallocate 18 auxiliary coaches from North Express Depot to Grand Stadium & HyperMetro Central Hub.",
-        estimated_impact: "-78% queue accumulation at Gate A; +2,400 pax/hr throughput.",
+        mathematical_justification: "Linear relaxation optimizes flow capacity Q_out = 3,400 pax/hr with minimal fleet cost penalty (delta_c = 1.0).",
+        expected_impact: {
+          queue_reduction: "-78% at Gate A",
+          throughput: "+2,400 pax/hr",
+          wait_time: "-18.5 mins"
+        },
         confidence_pct: 98.4,
         action_key: "DEPLOY_SHUTTLE_BRIDGE"
       },
       {
         id: "REC-102",
         type: "TRAFFIC_REVERSAL",
+        domain: "ROAD_NETWORK",
+        priority: "HIGH",
         title: "Dynamic Lane Reversal on Central Loop Arterial",
+        action_summary: "Convert 2 southbound lanes of Central Loop into outbound rapid-transit only lanes.",
         description: "Convert 2 southbound lanes of Central Loop into outbound rapid-transit only lanes.",
-        estimated_impact: "Increases evacuation corridor capacity by 140%; reduces bottleneck duration by 35 mins.",
+        mathematical_justification: "Max-flow min-cut algorithm proves +140% evacuation discharge rate along edge (junction-central -> venue-1).",
+        expected_impact: {
+          corridor_capacity: "+140%",
+          congestion_delta: "-42.8%",
+          clearing_time: "-35 mins"
+        },
         confidence_pct: 95.7,
         action_key: "DYNAMIC_LANE_REVERSAL"
       },
       {
         id: "REC-103",
         type: "PEDESTRIAN_GATE_BALANCING",
+        domain: "PEDESTRIAN",
+        priority: "HIGH",
         title: "Redistribute Ingress Flow to West & South Gate Plazas",
+        action_summary: "Dynamic digital signage and mobile app push routing 35% of inbound spectators away from crowded North Turnstiles.",
         description: "Dynamic digital signage and mobile app push routing 35% of inbound spectators away from crowded North Turnstiles.",
-        estimated_impact: "Equalizes stadium ingress load; reduces peak gate wait time from 32 mins to 6.5 mins.",
+        mathematical_justification: "Equalizes queuing theory M/M/c load factors rho across Gate A (0.62) and Gate West (0.58).",
+        expected_impact: {
+          peak_gate_wait: "-25.5 mins",
+          turnstile_utilization: "91% balanced",
+          concourse_safety: "+48%"
+        },
         confidence_pct: 94.1,
         action_key: "REDISTRIBUTE_PEDESTRIANS"
       },
       {
         id: "REC-104",
         type: "HOSPITALITY_BUFFER",
+        domain: "HOSPITALITY",
+        priority: "MEDIUM",
         title: "Activate Crown Grand Hotel Evacuation & Staging Lounges",
+        action_summary: "Open sheltered hotel concourses with digital flight/event status boards to absorb weather overflow.",
         description: "Open sheltered hotel concourses with digital flight/event status boards to absorb weather overflow.",
-        estimated_impact: "Accommodates up to 1,200 waiting visitors in controlled indoor environment.",
+        mathematical_justification: "Buffers transient spectator volume up to 1,200 pax, preventing exposed perimeter crowd build-up.",
+        expected_impact: {
+          sheltered_capacity: "1,200 pax",
+          hotel_buffer_load: "+34%",
+          medical_risk: "-60%"
+        },
         confidence_pct: 92.5,
         action_key: "ACTIVATE_HOTEL_BUFFER"
       }
@@ -212,7 +257,7 @@ export function getClientCopilotResponse(query, activeRole, state) {
 
   if (q.includes("transit") || q.includes("shuttle") || q.includes("metro") || q.includes("bus")) {
     return {
-      response_text: `🚄 **Multi-Modal Transit Dispatch Assessment**:\n- **HyperMetro Hub**: Wait times at **${state?.kpis?.avg_transit_wait_time_mins || 4.7} mins** across 18 active train sets.\n- **North Express Shuttle Depot**: 24 coaches active, frequency 3.0 mins.\n- **Optimization Status**: OR-Tools solver recommends dynamic shuttle buffering on Olympic Boulevard.`,
+      response_text: `🚄 **Multi-Modal Transit Dispatch Assessment**:\n- **HyperMetro Hub**: Wait times at **${state?.kpis?.avg_transit_wait_mins || state?.kpis?.avg_transit_wait_time_mins || 4.7} mins** across 18 active train sets.\n- **North Express Shuttle Depot**: 24 coaches active, frequency 3.0 mins.\n- **Optimization Status**: OR-Tools solver recommends dynamic shuttle buffering on Olympic Boulevard.`,
       suggested_actions: ["Dispatch 6 Shuttles to Central Hub", "Trigger Dynamic Lane Reversal"],
       affected_entities: ["transit-1", "transit-2", "road-1"]
     };
@@ -227,7 +272,7 @@ export function getClientCopilotResponse(query, activeRole, state) {
   }
 
   return {
-    response_text: `🤖 **EventFlow Copilot Briefing for [${activeRole.replace('_', ' ')}]**:\n- Current Event Time: **${time}**\n- Active District Attendees: **${state?.kpis?.total_active_visitors?.toLocaleString() || '115,900'}**\n- Average Road Congestion: **${cong}%**\n- Active Alert Level: **${state?.alerts?.length || 2} operational notices**.\n\nAll simulation parameters, routing algorithms, and multi-objective dispatch rules are running nominally.`,
+    response_text: `🤖 **EventFlow Copilot Briefing for [${(activeRole || 'MASTER_ORCHESTRATOR').replace('_', ' ')}]**:\n- Current Event Time: **${time}**\n- Active District Attendees: **${(state?.kpis?.total_active_visitors || 115900).toLocaleString()}**\n- Average Road Congestion: **${cong}%**\n- Active Alert Level: **${state?.alerts?.length || 2} operational notices**.\n\nAll simulation parameters, routing algorithms, and multi-objective dispatch rules are running nominally.`,
     suggested_actions: ["Run AI Forecast", "Simulate Scenario", "Compare Before vs After"],
     affected_entities: ["venue-1", "venue-2", "transit-1"]
   };
