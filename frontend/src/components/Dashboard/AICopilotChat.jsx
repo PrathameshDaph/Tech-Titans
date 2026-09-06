@@ -1,8 +1,97 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Bot, Send, Sparkles, User, ShieldCheck, 
-  HelpCircle, ArrowUpRight, MessageSquare, Terminal
+  HelpCircle, ArrowUpRight, MessageSquare, Terminal, Zap
 } from 'lucide-react';
+
+// Lightweight and robust Markdown renderer for conversational Copilot answers
+function MarkdownContent({ content }) {
+  if (!content) return null;
+
+  const lines = content.split('\n');
+
+  return (
+    <div className="space-y-1.5 text-xs text-slate-800 leading-relaxed font-normal">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <div key={idx} className="h-0.5" />;
+
+        // Header / Banner lines
+        if (
+          trimmed.startsWith('#') || 
+          trimmed.startsWith('⚡') || 
+          trimmed.startsWith('🔍') || 
+          trimmed.startsWith('🚄') || 
+          trimmed.startsWith('🛡️') || 
+          trimmed.startsWith('🏨') || 
+          trimmed.startsWith('🤖')
+        ) {
+          return (
+            <div key={idx} className="font-extrabold text-slate-900 text-xs sm:text-sm pt-1 pb-0.5 flex items-center gap-1.5 border-b border-slate-200/70 font-heading">
+              {renderInline(trimmed)}
+            </div>
+          );
+        }
+
+        // Bullet points (•, -, *)
+        const isBullet = trimmed.startsWith('• ') || trimmed.startsWith('- ') || trimmed.startsWith('* ');
+        const isNumbered = /^\d+\.\s/.test(trimmed);
+
+        if (isBullet || isNumbered) {
+          const textWithoutPrefix = isBullet 
+            ? trimmed.substring(2) 
+            : trimmed.replace(/^\d+\.\s/, '');
+          const prefix = isNumbered ? trimmed.match(/^\d+\./)[0] : '•';
+          
+          return (
+            <div key={idx} className="flex items-start gap-2 pl-1 my-1">
+              <span className="font-extrabold text-cyan-700 shrink-0 font-mono text-[11px]">{prefix}</span>
+              <div className="flex-1">{renderInline(textWithoutPrefix)}</div>
+            </div>
+          );
+        }
+
+        return <p key={idx} className="my-0.5">{renderInline(trimmed)}</p>;
+      })}
+    </div>
+  );
+}
+
+// Inline parser for **bold** and `code` tags
+function renderInline(text) {
+  if (!text) return '';
+  const parts = [];
+  const regex = /(\*\*[^*]+\*\*|`[^`]+`)/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    const token = match[0];
+    if (token.startsWith('**') && token.endsWith('**')) {
+      parts.push(
+        <strong key={match.index} className="font-extrabold text-slate-900">
+          {token.slice(2, -2)}
+        </strong>
+      );
+    } else if (token.startsWith('`') && token.endsWith('`')) {
+      parts.push(
+        <code key={match.index} className="px-1.5 py-0.5 rounded-md bg-cyan-50 border border-cyan-200 text-cyan-800 font-mono font-bold text-[10px] mx-0.5 inline-block shadow-2xs">
+          {token.slice(1, -1)}
+        </code>
+      );
+    }
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : text;
+}
 
 export default function AICopilotChat({ 
   copilotResponse, 
@@ -14,11 +103,11 @@ export default function AICopilotChat({
   const [messages, setMessages] = useState([
     {
       sender: 'copilot',
-      text: "🤖 **EventFlow AI Copilot Online.** Connected to Real-Time Telemetry and Predictive Engine. I am monitoring 4 arenas, 5 transit hubs, 4 hotel clusters, and 20 arterial corridors. Ask me for root-cause analyses, mathematical optimization justifications, or role briefings.",
+      text: "🤖 **EventFlow AI Copilot Online**\nConnected directly to real-time digital twin telemetry. Monitoring 4 arenas, 5 transit hubs, 4 hotel clusters, and 20 arterial corridors. Ask me for root-cause bottleneck analyses, mathematical optimization justifications, or role briefings.",
       actions: [
         "Why is Grand Stadium bottlenecked?",
         "Explain OR-Tools recommendation",
-        "Generate Police Command Briefing"
+        "Public Safety Briefing"
       ]
     }
   ]);
@@ -42,7 +131,7 @@ export default function AICopilotChat({
     try {
       const res = await onSendQuery(text);
       const answerText = res?.answer || res?.response_text || res?.text || "Copilot synthesized your query with district digital twin telemetry.";
-      const actions = res?.suggested_actions || ["Run AI Forecast", "Simulate Scenario", "Compare Before vs After"];
+      const actions = res?.suggested_actions || ["Why is Grand Stadium bottlenecked?", "Explain OR-Tools recommendation", "Public Safety Briefing"];
 
       setMessages(prev => [
         ...prev, 
@@ -58,7 +147,7 @@ export default function AICopilotChat({
         ...prev,
         {
           sender: 'copilot',
-          text: `🤖 **EventFlow Copilot Briefing [${(activeRole || 'MASTER_ORCHESTRATOR').replace('_', ' ')}]**:\n- **Event Time**: ${telemetry?.event_time || '19:45:00'}\n- **District Flow**: Congestion at ${telemetry?.kpis?.avg_road_congestion_pct || 48.6}%\n- **Transit Headways**: Average ${telemetry?.kpis?.avg_transit_wait_mins || 4.7} mins across all hubs.\n\nAll mathematical MIP constraints and live vehicle trackers are operating normally.`,
+          text: `🤖 **EventFlow Copilot Briefing [${(activeRole || 'MASTER_ORCHESTRATOR').replace('_', ' ')}]**:\n• **Event Time**: ${telemetry?.event_time || '19:45:00'}\n• **District Flow**: Congestion at **${telemetry?.kpis?.avg_road_congestion_pct || 48.6}%**\n• **Transit Headways**: Average **${telemetry?.kpis?.avg_transit_wait_mins || 4.7} mins** across all hubs.\n\nAll mathematical MIP constraints and live vehicle trackers are operating normally.`,
           actions: [
             "Why is Grand Stadium bottlenecked?",
             "Explain OR-Tools recommendation",
@@ -106,30 +195,34 @@ export default function AICopilotChat({
             key={idx}
             className={`flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'}`}
           >
-            <div className="flex items-start gap-2.5 max-w-[92%]">
+            <div className="flex items-start gap-2.5 max-w-[95%] sm:max-w-[90%]">
               {m.sender === 'copilot' && (
                 <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white text-xs shrink-0 mt-0.5 shadow-sm border border-purple-400/30">
-                  ⚡
+                  <Zap className="w-3.5 h-3.5 fill-current" />
                 </div>
               )}
 
               <div
-                className={`p-3.5 rounded-2xl leading-relaxed whitespace-pre-line text-xs ${
+                className={`p-3.5 rounded-2xl ${
                   m.sender === 'user'
                     ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-medium rounded-tr-none shadow-md shadow-cyan-600/20'
-                    : 'bg-slate-50 text-slate-800 border border-slate-200/90 rounded-tl-none shadow-xs'
+                    : 'bg-white text-slate-800 border border-slate-200/90 rounded-tl-none shadow-xs'
                 }`}
               >
-                {m.text}
+                {m.sender === 'user' ? (
+                  <p className="text-xs font-medium leading-relaxed">{m.text}</p>
+                ) : (
+                  <MarkdownContent content={m.text} />
+                )}
 
                 {/* Suggested Action Buttons */}
                 {m.actions && m.actions.length > 0 && (
-                  <div className="mt-3 pt-2.5 border-t border-slate-200/80 flex flex-wrap gap-1.5">
+                  <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap gap-1.5">
                     {m.actions.map((act, i) => (
                       <button
                         key={i}
                         onClick={() => handleSend(act)}
-                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 text-[11px] font-semibold text-cyan-800 border border-slate-300 flex items-center gap-1 shadow-2xs transition-all hover:shadow-xs active:scale-95 cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-cyan-50 text-[11px] font-semibold text-cyan-800 border border-slate-200 hover:border-cyan-300 flex items-center gap-1 shadow-2xs transition-all hover:shadow-xs active:scale-95 cursor-pointer"
                       >
                         <span>{act}</span>
                         <ArrowUpRight className="w-3 h-3 text-cyan-600" />
